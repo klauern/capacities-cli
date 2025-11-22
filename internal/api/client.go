@@ -159,7 +159,8 @@ func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure,
 	}
 
 	q := req.URL.Query()
-	q.Add("spaceid", spaceID)
+	//nolint:revive // API expects "spaceId" (camelCase)
+	q.Add("spaceId", spaceID)
 	req.URL.RawQuery = q.Encode()
 
 	req.Header.Set("Authorization", "Bearer "+c.token)
