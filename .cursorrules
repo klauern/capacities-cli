@@ -1,0 +1,8 @@
+# Available Tools
+
+The following tools are available in the environment and should be preferred over standard shell commands where applicable:
+
+- **rg** (ripgrep): Use for fast text search.
+- **fd**: Use for finding files.
+- **gh** (GitHub CLI): Use for interacting with GitHub (PRs, issues, releases).
+- **bd** (Beads): Use for issue and task management within the project.

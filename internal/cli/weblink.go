@@ -1,0 +1,81 @@
+package cli
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/klauern/capacities-cli/internal/api"
+	"github.com/klauern/capacities-cli/internal/config"
+	"github.com/urfave/cli/v3"
+)
+
+func SaveWebLinkCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "save-weblink",
+		Usage: "Save a weblink to a space",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "space-id",
+				Usage: "ID of the space to save to",
+			},
+			&cli.StringFlag{
+				Name:  "title",
+				Usage: "Overwrite title",
+			},
+			&cli.StringFlag{
+				Name:  "description",
+				Usage: "Overwrite description",
+			},
+			&cli.StringSliceFlag{
+				Name:  "tags",
+				Usage: "Tags to add",
+			},
+			&cli.StringFlag{
+				Name:  "md-text",
+				Usage: "Markdown text to add to the notes section",
+			},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			url := strings.Join(cmd.Args().Slice(), " ")
+			if url == "" {
+				return fmt.Errorf("URL is required")
+			}
+
+			cfg, err := config.Load()
+			if err != nil {
+				return fmt.Errorf("failed to load config: %w", err)
+			}
+
+			if cfg.Token == "" {
+				return fmt.Errorf("API token not found in config. Please configure it first")
+			}
+
+			spaceID := cmd.String("space-id")
+			if spaceID == "" {
+				spaceID = cfg.DefaultSpaceID
+			}
+			if spaceID == "" {
+				return fmt.Errorf("space ID is required (either via flag or config)")
+			}
+
+			client := api.NewClient(cfg.Token)
+			req := api.SaveWebLinkRequest{
+				SpaceID:              spaceID,
+				URL:                  url,
+				TitleOverwrite:       cmd.String("title"),
+				DescriptionOverwrite: cmd.String("description"),
+				Tags:                 cmd.StringSlice("tags"),
+				MDText:               cmd.String("md-text"),
+			}
+
+			resp, err := client.SaveWebLink(ctx, req)
+			if err != nil {
+				return fmt.Errorf("failed to save weblink: %w", err)
+			}
+
+			fmt.Printf("Successfully saved weblink. ID: %s\n", resp.ID)
+			return nil
+		},
+	}
+}
