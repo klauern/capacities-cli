@@ -132,7 +132,7 @@ This project uses [Beads](https://github.com/jonny-so/beads) for issue tracking.
 
 ## License
 
-[Add your license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Resources
 
