@@ -29,4 +29,22 @@ tasks:
   test:
     desc: Run tests
     cmds:
-      - go test ./...
+      - go test -v -race ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run
+
+  lint-fix:
+    desc: Run golangci-lint with auto-fix
+    cmds:
+      - golangci-lint run --fix
+
+  ci:
+    desc: Run all CI checks locally
+    cmds:
+      - task: lint
+      - task: test
+      - task: fmt
+      - task: build

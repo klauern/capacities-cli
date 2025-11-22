@@ -1,3 +1,4 @@
+// Package api provides the HTTP client for interacting with the Capacities.io API.
 package api
 
 import (
@@ -7,24 +8,30 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 const defaultBaseURL = "https://api.capacities.io"
 
+// Client is an HTTP client for interacting with the Capacities.io API.
 type Client struct {
 	token      string
 	baseURL    string
 	httpClient *http.Client
 }
 
+// NewClient creates a new Capacities API client with the given API token.
 func NewClient(token string) *Client {
 	return &Client{
-		token:      token,
-		baseURL:    defaultBaseURL,
-		httpClient: &http.Client{},
+		token:   token,
+		baseURL: defaultBaseURL,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
 
+// SaveOptions contains optional settings for saving to daily note.
 type SaveOptions struct {
 	NoTimeStamp bool
 }
@@ -36,6 +43,7 @@ type saveToDailyNoteRequest struct {
 	NoTimeStamp bool   `json:"noTimeStamp,omitempty"`
 }
 
+// SaveToDailyNote saves text content to the daily note in the specified space.
 func (c *Client) SaveToDailyNote(ctx context.Context, spaceID string, text string, opts SaveOptions) error {
 	reqBody := saveToDailyNoteRequest{
 		SpaceID:     spaceID,
@@ -61,7 +69,7 @@ func (c *Client) SaveToDailyNote(ctx context.Context, spaceID string, text strin
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -71,6 +79,7 @@ func (c *Client) SaveToDailyNote(ctx context.Context, spaceID string, text strin
 	return nil
 }
 
+// Icon represents an icon configuration in Capacities.
 type Icon struct {
 	Type     string `json:"type"`
 	Val      string `json:"val"`
@@ -78,6 +87,7 @@ type Icon struct {
 	ColorHex string `json:"colorHex"`
 }
 
+// Space represents a workspace in Capacities.
 type Space struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
@@ -88,6 +98,7 @@ type spacesResponse struct {
 	Spaces []Space `json:"spaces"`
 }
 
+// GetSpaces retrieves all spaces accessible with the current API token.
 func (c *Client) GetSpaces(ctx context.Context) ([]Space, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/spaces", nil)
 	if err != nil {
@@ -100,7 +111,7 @@ func (c *Client) GetSpaces(ctx context.Context) ([]Space, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -115,6 +126,7 @@ func (c *Client) GetSpaces(ctx context.Context) ([]Space, error) {
 	return result.Spaces, nil
 }
 
+// PropertyDefinition describes a property in a Capacities structure.
 type PropertyDefinition struct {
 	ID       string `json:"id"`
 	Type     string `json:"type"`
@@ -122,11 +134,13 @@ type PropertyDefinition struct {
 	Name     string `json:"name"`
 }
 
+// Collection represents a collection within a structure.
 type Collection struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 }
 
+// Structure represents a content structure (type) in Capacities.
 type Structure struct {
 	ID                  string               `json:"id"`
 	Title               string               `json:"title"`
@@ -140,6 +154,7 @@ type spaceInfoResponse struct {
 	Structures []Structure `json:"structures"`
 }
 
+// GetSpaceInfo retrieves detailed information about structures and collections in a space.
 func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/space-info", nil)
 	if err != nil {
@@ -147,7 +162,8 @@ func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure,
 	}
 
 	q := req.URL.Query()
-	q.Add("spaceid", spaceID)
+	//nolint:revive // API expects "spaceId" (camelCase)
+	q.Add("spaceId", spaceID)
 	req.URL.RawQuery = q.Encode()
 
 	req.Header.Set("Authorization", "Bearer "+c.token)
@@ -156,7 +172,7 @@ func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure,
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -171,6 +187,7 @@ func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure,
 	return result.Structures, nil
 }
 
+// SearchRequest contains parameters for searching content in Capacities.
 type SearchRequest struct {
 	SearchTerm         string   `json:"searchTerm"`
 	SpaceIDs           []string `json:"spaceIds"`
@@ -178,16 +195,19 @@ type SearchRequest struct {
 	Mode               string   `json:"mode,omitempty"`
 }
 
+// Context describes where a search match was found.
 type Context struct {
 	Field string `json:"field"`
 }
 
+// Highlight represents a search result highlight with context and score.
 type Highlight struct {
 	Context  Context  `json:"context"`
 	Snippets []string `json:"snippets"`
 	Score    float64  `json:"score"`
 }
 
+// SearchResult represents a single search result from the Capacities API.
 type SearchResult struct {
 	ID          string      `json:"id"`
 	SpaceID     string      `json:"spaceId"`
@@ -200,6 +220,7 @@ type searchResponse struct {
 	Results []SearchResult `json:"results"`
 }
 
+// Search performs a search across the specified spaces in Capacities.
 func (c *Client) Search(ctx context.Context, req SearchRequest) ([]SearchResult, error) {
 	data, err := json.Marshal(req)
 	if err != nil {
@@ -218,7 +239,7 @@ func (c *Client) Search(ctx context.Context, req SearchRequest) ([]SearchResult,
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -233,6 +254,7 @@ func (c *Client) Search(ctx context.Context, req SearchRequest) ([]SearchResult,
 	return result.Results, nil
 }
 
+// SaveWebLinkRequest contains parameters for saving a web link to Capacities.
 type SaveWebLinkRequest struct {
 	SpaceID              string   `json:"spaceId"`
 	URL                  string   `json:"url"`
@@ -242,6 +264,7 @@ type SaveWebLinkRequest struct {
 	MDText               string   `json:"mdText,omitempty"`
 }
 
+// SaveWebLinkResponse contains the result of saving a web link.
 type SaveWebLinkResponse struct {
 	SpaceID     string   `json:"spaceId"`
 	ID          string   `json:"id"`
@@ -251,6 +274,7 @@ type SaveWebLinkResponse struct {
 	Tags        []string `json:"tags"`
 }
 
+// SaveWebLink saves a web link to the specified space in Capacities.
 func (c *Client) SaveWebLink(ctx context.Context, req SaveWebLinkRequest) (*SaveWebLinkResponse, error) {
 	data, err := json.Marshal(req)
 	if err != nil {
@@ -269,7 +293,7 @@ func (c *Client) SaveWebLink(ctx context.Context, req SaveWebLinkRequest) (*Save
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

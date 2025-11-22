@@ -1,0 +1,98 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  allow-parallel-runners: true
+
+linters:
+  default: none
+  enable:
+    # Core essential linters
+    - govet
+    - staticcheck
+    - unused
+    - errcheck
+    - ineffassign
+
+    # Style
+    - misspell
+
+    # Security
+    - gosec
+
+    # Bug detection
+    - bodyclose
+    - contextcheck
+    - nilerr
+
+    # Performance
+    - prealloc
+
+    # Best practices
+    - unconvert
+    - unparam
+    - whitespace
+    - revive
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - io.Copy
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (net/http.ResponseWriter).Write
+        - (*tabwriter.Writer).Flush
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
+
+    misspell:
+      locale: US
+
+    gosec:
+      excludes:
+        - G204 # Subprocess launched with variable - needed for CLI tools
+
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+        - name: var-naming
+          disabled: false
+
+  exclusions:
+    paths:
+      - vendor
+      - .task
+      - bin
+      - ".*_test\\.go$"
+    rules:
+      # Allow globals in main package
+      - path: cmd/
+        linters:
+          - gochecknoglobals
+      # Allow deep nesting in test files
+      - path: _test\.go
+        linters:
+          - gocognit
+          - funlen
+
+issues:
+  max-same-issues: 50
+
+severity:
+  default: warning
+  rules:
+    - linters:
+        - errcheck
+        - gosec
+        - govet
+      severity: error

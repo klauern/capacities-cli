@@ -1,3 +1,4 @@
+// Package cli provides command-line interface commands for the Capacities CLI.
 package cli
 
 import (
@@ -11,11 +12,12 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// ConfigureCommand returns a command for configuring the CLI with an API token.
 func ConfigureCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "configure",
 		Usage: "Configure the CLI with your API token",
-		Action: func(ctx context.Context, cmd *cli.Command) error {
+		Action: func(_ context.Context, _ *cli.Command) error {
 			reader := bufio.NewReader(os.Stdin)
 
 			fmt.Print("Enter your Capacities API Token: ")

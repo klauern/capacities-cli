@@ -10,6 +10,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// DailyCommand returns a command for interacting with daily notes.
 func DailyCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "daily",

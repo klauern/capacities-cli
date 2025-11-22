@@ -41,7 +41,7 @@ func TestClient_SaveToDailyNote(t *testing.T) {
 
 		// Send response
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id": "note-id"}`))
+		_, _ = w.Write([]byte(`{"id": "note-id"}`))
 	}))
 	defer server.Close()
 
@@ -72,7 +72,7 @@ func TestClient_GetSpaces(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"spaces": [
 				{
 					"id": "space-1",
@@ -122,7 +122,7 @@ func TestClient_GetSpaceInfo(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"structures": [
 				{
 					"id": "struct-1",
@@ -202,7 +202,7 @@ func TestClient_Search(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"results": [
 				{
 					"id": "res-1",
@@ -268,7 +268,7 @@ func TestClient_SaveWebLink(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
+		_, _ = w.Write([]byte(`{
 			"spaceId": "space-1",
 			"id": "link-1",
 			"structureId": "struct-1",

@@ -1,3 +1,4 @@
+// Package main is the entry point for the Capacities CLI application.
 package main
 
 import (
@@ -9,10 +10,24 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// Build-time variables injected via ldflags.
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+	builtBy = "unknown"
+)
+
+// buildVersion returns a formatted version string including build metadata.
+func buildVersion() string {
+	return fmt.Sprintf("%s (commit: %s, built: %s, by: %s)", version, commit, date, builtBy)
+}
+
 func main() {
 	cmd := &cli.Command{
-		Name:  "capacities",
-		Usage: "CLI for Capacities.io",
+		Name:    "capacities",
+		Usage:   "CLI for Capacities.io",
+		Version: buildVersion(),
 		Commands: []*cli.Command{
 			internalcli.DailyCommand(),
 			internalcli.SpacesCommand(),
