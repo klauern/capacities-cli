@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 const defaultBaseURL = "https://api.capacities.io"
@@ -22,9 +23,11 @@ type Client struct {
 // NewClient creates a new Capacities API client with the given API token.
 func NewClient(token string) *Client {
 	return &Client{
-		token:      token,
-		baseURL:    defaultBaseURL,
-		httpClient: &http.Client{},
+		token:   token,
+		baseURL: defaultBaseURL,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
 
