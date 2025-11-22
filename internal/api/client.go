@@ -147,7 +147,7 @@ func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure,
 	}
 
 	q := req.URL.Query()
-	q.Add("spaceId", spaceID)
+	q.Add("spaceid", spaceID)
 	req.URL.RawQuery = q.Encode()
 
 	req.Header.Set("Authorization", "Bearer "+c.token)

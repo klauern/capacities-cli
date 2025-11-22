@@ -19,6 +19,7 @@ func main() {
 			internalcli.SpaceInfoCommand(),
 			internalcli.SearchCommand(),
 			internalcli.SaveWebLinkCommand(),
+			internalcli.ConfigureCommand(),
 		},
 	}
 

@@ -1,0 +1,32 @@
+version: "3"
+
+tasks:
+  default:
+    cmds:
+      - task: build
+
+  build:
+    desc: Build the binary
+    cmds:
+      - go build -o bin/capacities ./cmd/capacities
+    sources:
+      - ./**/*.go
+    generates:
+      - bin/capacities
+
+  fmt:
+    desc: Format code using gofumpt
+    cmds:
+      - gofumpt -l -w .
+
+  deps:
+    desc: Download dependencies
+    cmds:
+      - go mod download
+      - go mod tidy
+      - go install mvdan.cc/gofumpt@latest
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
