@@ -1,0 +1,100 @@
+version: 1
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: capacities
+    binary: capacities
+    dir: .
+    main: ./cmd/capacities
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+
+archives:
+  - id: capacities
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: klauern
+    name: capacities-cli
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Capacities CLI {{ .Tag }}
+
+    Welcome to this new release!
+  footer: |
+    ## Installation
+
+    ### Binary Download
+    Download the appropriate binary for your platform from the assets below.
+
+    ### Via Go Install
+    ```bash
+    go install github.com/klauern/capacities-cli/cmd/capacities@{{ .Tag }}
+    ```
+
+# Skip Homebrew for now - can be added later
+brews:
+  - repository:
+      owner: klauern
+      name: homebrew-tap
+    skip_upload: true
+    homepage: https://github.com/klauern/capacities-cli
+    description: CLI for interacting with Capacities.io API
+    license: MIT

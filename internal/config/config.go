@@ -1,3 +1,4 @@
+// Package config provides configuration management for the Capacities CLI.
 package config
 
 import (
@@ -8,11 +9,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Config holds the configuration for the Capacities CLI.
 type Config struct {
 	Token          string `yaml:"token"`
 	DefaultSpaceID string `yaml:"default_space_id"`
 }
 
+// Load reads the configuration from disk, returning an empty config if not found.
 func Load() (*Config, error) {
 	configPath, err := getConfigPath()
 	if err != nil {
@@ -23,6 +26,7 @@ func Load() (*Config, error) {
 		return &Config{}, nil
 	}
 
+	//nolint:gosec // G304: Config path is constructed from user's home directory, not user input
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
@@ -36,6 +40,7 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
+// Save writes the configuration to disk, creating the config directory if needed.
 func Save(cfg *Config) error {
 	configPath, err := getConfigPath()
 	if err != nil {
@@ -43,7 +48,7 @@ func Save(cfg *Config) error {
 	}
 
 	dir := filepath.Dir(configPath)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 

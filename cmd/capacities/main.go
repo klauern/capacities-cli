@@ -1,3 +1,4 @@
+// Package main is the entry point for the Capacities CLI application.
 package main
 
 import (

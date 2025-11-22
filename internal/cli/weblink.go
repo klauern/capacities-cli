@@ -10,6 +10,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// SaveWebLinkCommand returns a command for saving web links to Capacities.
 func SaveWebLinkCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "save-weblink",

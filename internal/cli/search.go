@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// SearchCommand returns a command for searching content in Capacities.
 func SearchCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "search",
@@ -67,15 +68,15 @@ func SearchCommand() *cli.Command {
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(w, "ID\tTITLE\tSCORE")
+			_, _ = fmt.Fprintln(w, "ID\tTITLE\tSCORE")
 			for _, r := range results {
 				score := 0.0
 				if len(r.Highlights) > 0 {
 					score = r.Highlights[0].Score
 				}
-				fmt.Fprintf(w, "%s\t%s\t%.2f\n", r.ID, r.Title, score)
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%.2f\n", r.ID, r.Title, score)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},

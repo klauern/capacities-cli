@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// SpaceInfoCommand returns a command for retrieving space information.
 func SpaceInfoCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "space-info",
@@ -47,7 +48,7 @@ func SpaceInfoCommand() *cli.Command {
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(w, "STRUCTURE ID\tTITLE\tCOLLECTIONS")
+			_, _ = fmt.Fprintln(w, "STRUCTURE ID\tTITLE\tCOLLECTIONS")
 			for _, s := range structures {
 				var collections []string
 				for _, c := range s.Collections {
@@ -57,9 +58,9 @@ func SpaceInfoCommand() *cli.Command {
 				if cols == "" {
 					cols = "-"
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\n", s.ID, s.Title, cols)
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", s.ID, s.Title, cols)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},

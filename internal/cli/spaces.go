@@ -11,11 +11,12 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// SpacesCommand returns a command for listing all spaces.
 func SpacesCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "spaces",
 		Usage: "List all spaces",
-		Action: func(ctx context.Context, cmd *cli.Command) error {
+		Action: func(ctx context.Context, _ *cli.Command) error {
 			cfg, err := config.Load()
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
@@ -32,15 +33,15 @@ func SpacesCommand() *cli.Command {
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(w, "ID\tTITLE\tICON")
+			_, _ = fmt.Fprintln(w, "ID\tTITLE\tICON")
 			for _, space := range spaces {
 				iconVal := space.Icon.Val
 				if space.Icon.Type == "emoji" {
 					iconVal = space.Icon.Val
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\n", space.ID, space.Title, iconVal)
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", space.ID, space.Title, iconVal)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},

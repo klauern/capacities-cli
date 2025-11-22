@@ -1,0 +1,85 @@
+version: 2
+
+run:
+  timeout: 5m
+  tests: true
+  allow-parallel-runners: true
+
+linters:
+  enable:
+    # Core essential linters
+    - govet
+    - staticcheck
+    - unused
+    - errcheck
+    - ineffassign
+
+    # Style
+    - misspell
+
+    # Security
+    - gosec
+
+    # Bug detection
+    - bodyclose
+    - contextcheck
+    - nilerr
+
+    # Performance
+    - prealloc
+
+    # Best practices
+    - unconvert
+    - unparam
+    - whitespace
+    - revive
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    enable-all: true
+
+  misspell:
+    locale: US
+
+  gosec:
+    excludes:
+      - G204 # Subprocess launched with variable - needed for CLI tools
+
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: var-naming
+        disabled: false
+
+issues:
+  max-same-issues: 50
+  exclude-dirs:
+    - vendor
+    - .task
+    - bin
+  exclude-files:
+    - ".*_test\\.go$"
+  exclude-rules:
+    # Allow globals in main package
+    - path: cmd/
+      linters:
+        - gochecknoglobals
+    # Allow deep nesting in test files
+    - path: _test\.go
+      linters:
+        - gocognit
+        - funlen
+
+severity:
+  default: warning
+  rules:
+    - linters:
+        - errcheck
+        - gosec
+        - govet
+      severity: error
