@@ -1,0 +1,8 @@
+# Binaries
+capacities
+
+# Config
+.config/
+
+# OS specific
+.DS_Store
