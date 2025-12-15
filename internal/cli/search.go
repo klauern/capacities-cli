@@ -8,7 +8,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/klauern/capacities-cli/internal/api"
-	"github.com/klauern/capacities-cli/internal/config"
 	"github.com/urfave/cli/v3"
 )
 
@@ -18,10 +17,6 @@ func SearchCommand() *cli.Command {
 		Name:  "search",
 		Usage: "Search for content",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "space-id",
-				Usage: "ID of the space to search in (can be specified multiple times, comma separated)",
-			},
 			&cli.StringFlag{
 				Name:  "mode",
 				Usage: "Search mode (title or fullText)",
@@ -34,31 +29,39 @@ func SearchCommand() *cli.Command {
 				return fmt.Errorf("search term is required")
 			}
 
-			cfg, err := config.Load()
+			auth, err := RequireToken(cmd)
 			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			if cfg.Token == "" {
-				return fmt.Errorf("API token not found in config. Please configure it first")
+				return err
 			}
 
 			spaceIDsStr := cmd.String("space-id")
 			var spaceIDs []string
 			if spaceIDsStr != "" {
 				spaceIDs = strings.Split(spaceIDsStr, ",")
-			} else if cfg.DefaultSpaceID != "" {
-				spaceIDs = []string{cfg.DefaultSpaceID}
+			} else if auth.DefaultSpaceID != "" {
+				spaceIDs = []string{auth.DefaultSpaceID}
 			}
 
 			if len(spaceIDs) == 0 {
-				return fmt.Errorf("at least one space ID is required (via flag or config)")
+				return fmt.Errorf("at least one space ID is required (set --space-id, CAPACITIES_DEFAULT_SPACE_ID, or configure default_space_id)")
+			}
+			for i := range spaceIDs {
+				spaceIDs[i] = strings.TrimSpace(spaceIDs[i])
+			}
+			var cleaned []string
+			for _, id := range spaceIDs {
+				if id != "" {
+					cleaned = append(cleaned, id)
+				}
+			}
+			if len(cleaned) == 0 {
+				return fmt.Errorf("at least one space ID is required (set --space-id, CAPACITIES_DEFAULT_SPACE_ID, or configure default_space_id)")
 			}
 
-			client := api.NewClient(cfg.Token)
+			client := api.NewClient(auth.Token)
 			req := api.SearchRequest{
 				SearchTerm: term,
-				SpaceIDs:   spaceIDs,
+				SpaceIDs:   cleaned,
 				Mode:       cmd.String("mode"),
 			}
 
