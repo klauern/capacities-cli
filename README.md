@@ -101,6 +101,8 @@ This project uses [Task](https://taskfile.dev/) for common development tasks.
 - `task deps` - Download dependencies and install development tools
 - `task test` - Run tests
 
+The Taskfile uses a repo-local Go build cache (`.cache/`) to avoid failures in environments that can't write to the default Go cache directory.
+
 ### Project Structure
 
 ```
