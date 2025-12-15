@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -58,6 +60,39 @@ func TestClient_SaveToDailyNote(t *testing.T) {
 
 	if err := client.SaveToDailyNote(context.Background(), "test-space", "test note", SaveOptions{}); err != nil {
 		t.Fatalf("SaveToDailyNote failed: %v", err)
+	}
+}
+
+func TestClient_TypedAPIErrorIncludesStatusAndBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte("unauthorized"))
+	}))
+	defer server.Close()
+
+	client := NewClient("test-token")
+	client.baseURL = server.URL
+
+	_, err := client.GetSpaces(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, apiErr.StatusCode)
+	}
+	if string(apiErr.Body) != "unauthorized" {
+		t.Fatalf("expected body %q, got %q", "unauthorized", string(apiErr.Body))
+	}
+	if apiErr.Method != http.MethodGet {
+		t.Fatalf("expected method %q, got %q", http.MethodGet, apiErr.Method)
+	}
+	if !strings.Contains(apiErr.URL, "/spaces") {
+		t.Fatalf("expected URL to contain %q, got %q", "/spaces", apiErr.URL)
 	}
 }
 

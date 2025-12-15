@@ -8,10 +8,30 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
 const defaultBaseURL = "https://api.capacities.io"
+
+// APIError represents a non-200 response from the Capacities API.
+type APIError struct {
+	StatusCode int
+	Method     string
+	URL        string
+	Body       []byte
+}
+
+func (e *APIError) Error() string {
+	if e == nil {
+		return "<nil>"
+	}
+	body := string(e.Body)
+	if body == "" {
+		return fmt.Sprintf("API request failed with status %d", e.StatusCode)
+	}
+	return fmt.Sprintf("API request failed with status %d: %s", e.StatusCode, body)
+}
 
 // Client is an HTTP client for interacting with the Capacities.io API.
 type Client struct {
@@ -29,6 +49,57 @@ func NewClient(token string) *Client {
 			Timeout: 30 * time.Second,
 		},
 	}
+}
+
+func (c *Client) doJSON(ctx context.Context, method string, path string, query url.Values, requestBody any, responseBody any) error {
+	var bodyReader io.Reader
+	if requestBody != nil {
+		data, err := json.Marshal(requestBody)
+		if err != nil {
+			return fmt.Errorf("failed to marshal request body: %w", err)
+		}
+		bodyReader = bytes.NewReader(data)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, bodyReader)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	if query != nil {
+		req.URL.RawQuery = query.Encode()
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	if requestBody != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return &APIError{
+			StatusCode: resp.StatusCode,
+			Method:     method,
+			URL:        req.URL.String(),
+			Body:       body,
+		}
+	}
+
+	if responseBody == nil {
+		return nil
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(responseBody); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return nil
 }
 
 // SaveOptions contains optional settings for saving to daily note.
@@ -52,31 +123,7 @@ func (c *Client) SaveToDailyNote(ctx context.Context, spaceID string, text strin
 		NoTimeStamp: opts.NoTimeStamp,
 	}
 
-	data, err := json.Marshal(reqBody)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/save-to-daily-note", bytes.NewBuffer(data))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.token)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	return nil
+	return c.doJSON(ctx, http.MethodPost, "/save-to-daily-note", nil, reqBody, nil)
 }
 
 // Icon represents an icon configuration in Capacities.
@@ -100,27 +147,9 @@ type spacesResponse struct {
 
 // GetSpaces retrieves all spaces accessible with the current API token.
 func (c *Client) GetSpaces(ctx context.Context) ([]Space, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/spaces", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
 	var result spacesResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := c.doJSON(ctx, http.MethodGet, "/spaces", nil, nil, &result); err != nil {
+		return nil, err
 	}
 
 	return result.Spaces, nil
@@ -156,32 +185,13 @@ type spaceInfoResponse struct {
 
 // GetSpaceInfo retrieves detailed information about structures and collections in a space.
 func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/space-info", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	q := req.URL.Query()
 	//nolint:revive // API expects "spaceId" (camelCase)
+	q := url.Values{}
 	q.Add("spaceId", spaceID)
-	req.URL.RawQuery = q.Encode()
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
 
 	var result spaceInfoResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := c.doJSON(ctx, http.MethodGet, "/space-info", q, nil, &result); err != nil {
+		return nil, err
 	}
 
 	return result.Structures, nil
@@ -222,33 +232,9 @@ type searchResponse struct {
 
 // Search performs a search across the specified spaces in Capacities.
 func (c *Client) Search(ctx context.Context, req SearchRequest) ([]SearchResult, error) {
-	data, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/search", bytes.NewBuffer(data))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+c.token)
-
-	resp, err := c.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
 	var result searchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := c.doJSON(ctx, http.MethodPost, "/search", nil, req, &result); err != nil {
+		return nil, err
 	}
 
 	return result.Results, nil
@@ -276,33 +262,9 @@ type SaveWebLinkResponse struct {
 
 // SaveWebLink saves a web link to the specified space in Capacities.
 func (c *Client) SaveWebLink(ctx context.Context, req SaveWebLinkRequest) (*SaveWebLinkResponse, error) {
-	data, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/save-weblink", bytes.NewBuffer(data))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+c.token)
-
-	resp, err := c.httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
 	var result SaveWebLinkResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := c.doJSON(ctx, http.MethodPost, "/save-weblink", nil, req, &result); err != nil {
+		return nil, err
 	}
 
 	return &result, nil
