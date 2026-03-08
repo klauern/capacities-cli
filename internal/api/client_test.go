@@ -55,7 +55,7 @@ func TestClient_SaveToDailyNote(t *testing.T) {
 	}
 }
 
-func TestClient_TypedAPIErrorIncludesStatusAndBody(t *testing.T) {
+func TestClient_TypedErrorIncludesStatusAndBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("unauthorized"))
@@ -70,9 +70,9 @@ func TestClient_TypedAPIErrorIncludesStatusAndBody(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var apiErr *APIError
+	var apiErr *Error
 	if !errors.As(err, &apiErr) {
-		t.Fatalf("expected *APIError, got %T: %v", err, err)
+		t.Fatalf("expected *Error, got %T: %v", err, err)
 	}
 	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, apiErr.StatusCode)
