@@ -8,7 +8,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/klauern/capacities-cli/internal/api"
-	"github.com/klauern/capacities-cli/internal/config"
 	"github.com/urfave/cli/v3"
 )
 
@@ -24,13 +23,9 @@ func SpaceInfoCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg, err := config.Load()
+			cfg, err := loadConfig()
 			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			if cfg.Token == "" {
-				return fmt.Errorf("API token not found in config. Please configure it first")
+				return err
 			}
 
 			spaceID := cmd.String("space-id")

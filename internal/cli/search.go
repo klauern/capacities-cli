@@ -8,7 +8,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/klauern/capacities-cli/internal/api"
-	"github.com/klauern/capacities-cli/internal/config"
 	"github.com/urfave/cli/v3"
 )
 
@@ -34,13 +33,9 @@ func SearchCommand() *cli.Command {
 				return fmt.Errorf("search term is required")
 			}
 
-			cfg, err := config.Load()
+			cfg, err := loadConfig()
 			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
-
-			if cfg.Token == "" {
-				return fmt.Errorf("API token not found in config. Please configure it first")
+				return err
 			}
 
 			spaceIDsStr := cmd.String("space-id")
