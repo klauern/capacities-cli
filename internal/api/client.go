@@ -22,6 +22,7 @@ type Error struct {
 	Body       []byte
 }
 
+// Error returns a string describing the API error, including the HTTP status code and response body.
 func (e *Error) Error() string {
 	if e == nil {
 		return "<nil>"
@@ -51,6 +52,8 @@ func NewClient(token string) *Client {
 	}
 }
 
+// doJSON performs an authenticated JSON HTTP request, marshaling the request body and
+// unmarshaling the response into responseBody. It returns an *Error for non-2xx responses.
 func (c *Client) doJSON(ctx context.Context, method string, path string, query url.Values, requestBody any, responseBody any) error {
 	var bodyReader io.Reader
 	if requestBody != nil {

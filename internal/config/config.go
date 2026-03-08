@@ -64,6 +64,7 @@ func Save(cfg *Config) error {
 	return nil
 }
 
+// getConfigPath returns the OS-specific path to the config file (~/.config/capacities/config.yaml).
 func getConfigPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
