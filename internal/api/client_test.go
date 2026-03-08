@@ -47,23 +47,15 @@ func TestClient_SaveToDailyNote(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create client with mock server URL
-	// We need to modify the client to allow overriding the base URL for testing
-	// For now, we can temporarily change the constant or make it configurable.
-	// A better approach is to add a BaseURL field to the Client struct.
-
-	// Since I cannot change the const in the same package easily without modifying the struct,
-	// I will modify the Client struct in client.go to support BaseURL.
-
 	client := NewClient("test-token")
-	client.baseURL = server.URL // This requires modifying Client struct to have baseURL field
+	client.baseURL = server.URL
 
 	if err := client.SaveToDailyNote(context.Background(), "test-space", "test note", SaveOptions{}); err != nil {
 		t.Fatalf("SaveToDailyNote failed: %v", err)
 	}
 }
 
-func TestClient_TypedAPIErrorIncludesStatusAndBody(t *testing.T) {
+func TestClient_TypedErrorIncludesStatusAndBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("unauthorized"))
@@ -78,9 +70,9 @@ func TestClient_TypedAPIErrorIncludesStatusAndBody(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	var apiErr *APIError
+	var apiErr *Error
 	if !errors.As(err, &apiErr) {
-		t.Fatalf("expected *APIError, got %T: %v", err, err)
+		t.Fatalf("expected *Error, got %T: %v", err, err)
 	}
 	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, apiErr.StatusCode)

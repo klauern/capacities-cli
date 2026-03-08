@@ -14,15 +14,15 @@ import (
 
 const defaultBaseURL = "https://api.capacities.io"
 
-// APIError represents a non-200 response from the Capacities API.
-type APIError struct {
+// Error represents a non-200 response from the Capacities API.
+type Error struct {
 	StatusCode int
 	Method     string
 	URL        string
 	Body       []byte
 }
 
-func (e *APIError) Error() string {
+func (e *Error) Error() string {
 	if e == nil {
 		return "<nil>"
 	}
@@ -83,7 +83,7 @@ func (c *Client) doJSON(ctx context.Context, method string, path string, query u
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return &APIError{
+		return &Error{
 			StatusCode: resp.StatusCode,
 			Method:     method,
 			URL:        req.URL.String(),
