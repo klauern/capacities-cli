@@ -207,25 +207,25 @@ func TestClient_GetSpaceInfo(t *testing.T) {
 	}
 }
 
-func TestClient_Search(t *testing.T) {
+func TestClient_Lookup(t *testing.T) {
 	// Mock server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("Expected method POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/search" {
-			t.Errorf("Expected path /search, got %s", r.URL.Path)
+		if r.URL.Path != "/lookup" {
+			t.Errorf("Expected path /lookup, got %s", r.URL.Path)
 		}
 
-		var reqBody SearchRequest
+		var reqBody LookupRequest
 		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 			t.Errorf("Failed to decode request body: %v", err)
 		}
 		if reqBody.SearchTerm != "AI" {
 			t.Errorf("Expected SearchTerm 'AI', got %s", reqBody.SearchTerm)
 		}
-		if len(reqBody.SpaceIDs) != 1 || reqBody.SpaceIDs[0] != "space-1" {
-			t.Errorf("Expected SpaceIDs ['space-1'], got %v", reqBody.SpaceIDs)
+		if reqBody.SpaceID != "space-1" {
+			t.Errorf("Expected SpaceID 'space-1', got %s", reqBody.SpaceID)
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -233,18 +233,8 @@ func TestClient_Search(t *testing.T) {
 			"results": [
 				{
 					"id": "res-1",
-					"spaceId": "space-1",
 					"structureId": "struct-1",
-					"title": "AI Research",
-					"highlights": [
-						{
-							"context": {
-								"field": "title"
-							},
-							"snippets": ["AI"],
-							"score": 1.0
-						}
-					]
+					"title": "AI Research"
 				}
 			]
 		}`))
@@ -254,12 +244,12 @@ func TestClient_Search(t *testing.T) {
 	client := NewClient("test-token")
 	client.baseURL = server.URL
 
-	results, err := client.Search(context.Background(), SearchRequest{
+	results, err := client.Lookup(context.Background(), LookupRequest{
 		SearchTerm: "AI",
-		SpaceIDs:   []string{"space-1"},
+		SpaceID:    "space-1",
 	})
 	if err != nil {
-		t.Fatalf("Search failed: %v", err)
+		t.Fatalf("Lookup failed: %v", err)
 	}
 
 	if len(results) != 1 {

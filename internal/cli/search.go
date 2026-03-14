@@ -11,20 +11,15 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-// SearchCommand returns a command for searching content in Capacities.
+// SearchCommand returns a command for looking up content by title in Capacities.
 func SearchCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "search",
-		Usage: "Search for content",
+		Usage: "Look up content by title",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "space-id",
-				Usage: "ID of the space to search in (can be specified multiple times, comma separated)",
-			},
-			&cli.StringFlag{
-				Name:  "mode",
-				Usage: "Search mode (title or fullText)",
-				Value: "title",
+				Usage: "ID of the space to search in",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -38,38 +33,29 @@ func SearchCommand() *cli.Command {
 				return err
 			}
 
-			spaceIDsStr := cmd.String("space-id")
-			var spaceIDs []string
-			if spaceIDsStr != "" {
-				spaceIDs = strings.Split(spaceIDsStr, ",")
-			} else if cfg.DefaultSpaceID != "" {
-				spaceIDs = []string{cfg.DefaultSpaceID}
+			spaceID := cmd.String("space-id")
+			if spaceID == "" {
+				spaceID = cfg.DefaultSpaceID
 			}
-
-			if len(spaceIDs) == 0 {
-				return fmt.Errorf("at least one space ID is required (via flag or config)")
+			if spaceID == "" {
+				return fmt.Errorf("space ID is required (either via flag or config)")
 			}
 
 			client := api.NewClient(cfg.Token)
-			req := api.SearchRequest{
+			req := api.LookupRequest{
 				SearchTerm: term,
-				SpaceIDs:   spaceIDs,
-				Mode:       cmd.String("mode"),
+				SpaceID:    spaceID,
 			}
 
-			results, err := client.Search(ctx, req)
+			results, err := client.Lookup(ctx, req)
 			if err != nil {
-				return fmt.Errorf("search failed: %w", err)
+				return fmt.Errorf("lookup failed: %w", err)
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			_, _ = fmt.Fprintln(w, "ID\tTITLE\tSCORE")
+			_, _ = fmt.Fprintln(w, "ID\tSTRUCTURE ID\tTITLE")
 			for _, r := range results {
-				score := 0.0
-				if len(r.Highlights) > 0 {
-					score = r.Highlights[0].Score
-				}
-				_, _ = fmt.Fprintf(w, "%s\t%s\t%.2f\n", r.ID, r.Title, score)
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", r.ID, r.StructureID, r.Title)
 			}
 			_ = w.Flush()
 
