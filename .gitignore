@@ -10,3 +10,6 @@
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Override global /.claude/ exclusion — commit hooks, skills, agents
+!.claude/
