@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/klauern/capacities-cli/internal/api"
 	"github.com/urfave/cli/v3"
@@ -20,6 +19,11 @@ func SearchCommand() *cli.Command {
 			&cli.StringFlag{
 				Name:  "space-id",
 				Usage: "ID of the space to search in",
+			},
+			&cli.StringFlag{
+				Name:  "format",
+				Usage: "Output format: table or json",
+				Value: formatTable,
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -52,14 +56,7 @@ func SearchCommand() *cli.Command {
 				return fmt.Errorf("lookup failed: %w", err)
 			}
 
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			_, _ = fmt.Fprintln(w, "ID\tSTRUCTURE ID\tTITLE")
-			for _, r := range results {
-				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", r.ID, r.StructureID, r.Title)
-			}
-			_ = w.Flush()
-
-			return nil
+			return printLookupResults(os.Stdout, results, cmd.String("format"))
 		},
 	}
 }
