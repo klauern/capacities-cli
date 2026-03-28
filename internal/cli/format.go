@@ -15,6 +15,16 @@ const (
 	formatJSON  = "json"
 )
 
+// validateFormat returns an error if format is not a recognised output format.
+func validateFormat(format string) error {
+	switch format {
+	case formatTable, formatJSON:
+		return nil
+	default:
+		return fmt.Errorf("unknown format %q: must be %q or %q", format, formatTable, formatJSON)
+	}
+}
+
 func printJSON(out io.Writer, v any) error {
 	enc := json.NewEncoder(out)
 	enc.SetIndent("", "  ")
@@ -71,5 +81,18 @@ func printLookupResults(out io.Writer, results []api.LookupResult, format string
 		rows[i] = fmt.Sprintf("%s\t%s\t%s", r.ID, r.StructureID, r.Title)
 	}
 	printTabTable(out, "ID\tSTRUCTURE ID\tTITLE", rows)
+	return nil
+}
+
+func printSaveWebLinkResponse(out io.Writer, resp *api.SaveWebLinkResponse, format string) error {
+	if format == formatJSON {
+		return printJSON(out, resp)
+	}
+	tags := strings.Join(resp.Tags, ", ")
+	if tags == "" {
+		tags = "-"
+	}
+	rows := []string{fmt.Sprintf("%s\t%s\t%s\t%s", resp.ID, resp.Title, resp.Description, tags)}
+	printTabTable(out, "ID\tTITLE\tDESCRIPTION\tTAGS", rows)
 	return nil
 }

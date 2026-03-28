@@ -27,6 +27,11 @@ func SearchCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			format := cmd.String("format")
+			if err := validateFormat(format); err != nil {
+				return err
+			}
+
 			term := strings.Join(cmd.Args().Slice(), " ")
 			if term == "" {
 				return fmt.Errorf("search term is required")
@@ -56,7 +61,7 @@ func SearchCommand() *cli.Command {
 				return fmt.Errorf("lookup failed: %w", err)
 			}
 
-			return printLookupResults(os.Stdout, results, cmd.String("format"))
+			return printLookupResults(os.Stdout, results, format)
 		},
 	}
 }

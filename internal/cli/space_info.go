@@ -26,6 +26,11 @@ func SpaceInfoCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			format := cmd.String("format")
+			if err := validateFormat(format); err != nil {
+				return err
+			}
+
 			cfg, err := loadConfig()
 			if err != nil {
 				return err
@@ -45,7 +50,7 @@ func SpaceInfoCommand() *cli.Command {
 				return fmt.Errorf("failed to get space info: %w", err)
 			}
 
-			return printStructures(os.Stdout, structures, cmd.String("format"))
+			return printStructures(os.Stdout, structures, format)
 		},
 	}
 }

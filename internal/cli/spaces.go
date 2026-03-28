@@ -22,6 +22,11 @@ func SpacesCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			format := cmd.String("format")
+			if err := validateFormat(format); err != nil {
+				return err
+			}
+
 			cfg, err := loadConfig()
 			if err != nil {
 				return err
@@ -33,7 +38,7 @@ func SpacesCommand() *cli.Command {
 				return fmt.Errorf("failed to get spaces: %w", err)
 			}
 
-			return printSpaces(os.Stdout, spaces, cmd.String("format"))
+			return printSpaces(os.Stdout, spaces, format)
 		},
 	}
 }

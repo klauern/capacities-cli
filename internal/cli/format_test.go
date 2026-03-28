@@ -131,3 +131,77 @@ func TestPrintLookupResults(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateFormat(t *testing.T) {
+	tests := []struct {
+		format  string
+		wantErr bool
+	}{
+		{formatTable, false},
+		{formatJSON, false},
+		{"csv", true},
+		{"", true},
+		{"JSON", true},
+		{"TABLE", true},
+	}
+	for _, tc := range tests {
+		err := validateFormat(tc.format)
+		if tc.wantErr && err == nil {
+			t.Errorf("validateFormat(%q): expected error, got nil", tc.format)
+		}
+		if !tc.wantErr && err != nil {
+			t.Errorf("validateFormat(%q): unexpected error: %v", tc.format, err)
+		}
+	}
+}
+
+func TestPrintSaveWebLinkResponse(t *testing.T) {
+	resp := &api.SaveWebLinkResponse{
+		SpaceID:     "sp1",
+		ID:          "wl1",
+		StructureID: "str1",
+		Title:       "Go Blog",
+		Description: "The Go Programming Language Blog",
+		Tags:        []string{"go", "blog"},
+	}
+
+	t.Run("table", func(t *testing.T) {
+		var buf bytes.Buffer
+		if err := printSaveWebLinkResponse(&buf, resp, formatTable); err != nil {
+			t.Fatalf("printSaveWebLinkResponse error: %v", err)
+		}
+		out := buf.String()
+		if !strings.Contains(out, "wl1") || !strings.Contains(out, "Go Blog") {
+			t.Errorf("table missing expected content: %q", out)
+		}
+		if !strings.Contains(out, "go") || !strings.Contains(out, "blog") {
+			t.Errorf("table missing tags: %q", out)
+		}
+	})
+
+	t.Run("table_no_tags", func(t *testing.T) {
+		noTagResp := &api.SaveWebLinkResponse{ID: "wl2", Title: "Plain"}
+		var buf bytes.Buffer
+		if err := printSaveWebLinkResponse(&buf, noTagResp, formatTable); err != nil {
+			t.Fatalf("printSaveWebLinkResponse error: %v", err)
+		}
+		out := buf.String()
+		if !strings.Contains(out, "-") {
+			t.Errorf("table should show '-' for empty tags: %q", out)
+		}
+	})
+
+	t.Run("json", func(t *testing.T) {
+		var buf bytes.Buffer
+		if err := printSaveWebLinkResponse(&buf, resp, formatJSON); err != nil {
+			t.Fatalf("printSaveWebLinkResponse error: %v", err)
+		}
+		var got api.SaveWebLinkResponse
+		if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
+			t.Fatalf("invalid JSON: %v\noutput: %s", err, buf.String())
+		}
+		if got.ID != "wl1" || got.Title != "Go Blog" || len(got.Tags) != 2 {
+			t.Fatalf("unexpected JSON content: %+v", got)
+		}
+	})
+}
