@@ -22,6 +22,7 @@ type Error struct {
 	Body       []byte
 }
 
+// Error returns a string describing the API error, including the HTTP status code and response body.
 func (e *Error) Error() string {
 	if e == nil {
 		return "<nil>"
@@ -51,6 +52,8 @@ func NewClient(token string) *Client {
 	}
 }
 
+// doJSON performs an authenticated JSON HTTP request, marshaling the request body and
+// unmarshaling the response into responseBody. It returns an *Error for non-2xx responses.
 func (c *Client) doJSON(ctx context.Context, method string, path string, query url.Values, requestBody any, responseBody any) error {
 	var bodyReader io.Reader
 	if requestBody != nil {
@@ -197,43 +200,27 @@ func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure,
 	return result.Structures, nil
 }
 
-// SearchRequest contains parameters for searching content in Capacities.
-type SearchRequest struct {
-	SearchTerm         string   `json:"searchTerm"`
-	SpaceIDs           []string `json:"spaceIds"`
-	FilterStructureIDs []string `json:"filterStructureIds,omitempty"`
-	Mode               string   `json:"mode,omitempty"`
+// LookupRequest contains parameters for looking up content by title in Capacities.
+type LookupRequest struct {
+	SearchTerm string `json:"searchTerm"`
+	SpaceID    string `json:"spaceId"`
 }
 
-// Context describes where a search match was found.
-type Context struct {
-	Field string `json:"field"`
+// LookupResult represents a single result from a lookup operation.
+type LookupResult struct {
+	ID          string `json:"id"`
+	StructureID string `json:"structureId"`
+	Title       string `json:"title"`
 }
 
-// Highlight represents a search result highlight with context and score.
-type Highlight struct {
-	Context  Context  `json:"context"`
-	Snippets []string `json:"snippets"`
-	Score    float64  `json:"score"`
+type lookupResponse struct {
+	Results []LookupResult `json:"results"`
 }
 
-// SearchResult represents a single search result from the Capacities API.
-type SearchResult struct {
-	ID          string      `json:"id"`
-	SpaceID     string      `json:"spaceId"`
-	StructureID string      `json:"structureId"`
-	Title       string      `json:"title"`
-	Highlights  []Highlight `json:"highlights"`
-}
-
-type searchResponse struct {
-	Results []SearchResult `json:"results"`
-}
-
-// Search performs a search across the specified spaces in Capacities.
-func (c *Client) Search(ctx context.Context, req SearchRequest) ([]SearchResult, error) {
-	var result searchResponse
-	if err := c.doJSON(ctx, http.MethodPost, "/search", nil, req, &result); err != nil {
+// Lookup searches for content by title in the specified space.
+func (c *Client) Lookup(ctx context.Context, req LookupRequest) ([]LookupResult, error) {
+	var result lookupResponse
+	if err := c.doJSON(ctx, http.MethodPost, "/lookup", nil, req, &result); err != nil {
 		return nil, err
 	}
 

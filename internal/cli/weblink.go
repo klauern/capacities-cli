@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/klauern/capacities-cli/internal/api"
@@ -35,8 +36,18 @@ func SaveWebLinkCommand() *cli.Command {
 				Name:  "md-text",
 				Usage: "Markdown text to add to the notes section",
 			},
+			&cli.StringFlag{
+				Name:  "format",
+				Usage: "Output format: table or json",
+				Value: formatTable,
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			format := cmd.String("format")
+			if err := validateFormat(format); err != nil {
+				return err
+			}
+
 			url := strings.Join(cmd.Args().Slice(), " ")
 			if url == "" {
 				return fmt.Errorf("URL is required")
@@ -70,8 +81,7 @@ func SaveWebLinkCommand() *cli.Command {
 				return fmt.Errorf("failed to save weblink: %w", err)
 			}
 
-			fmt.Printf("Successfully saved weblink. ID: %s\n", resp.ID)
-			return nil
+			return printSaveWebLinkResponse(os.Stdout, resp, format)
 		},
 	}
 }
