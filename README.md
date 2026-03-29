@@ -8,6 +8,7 @@ A command-line interface for interacting with the [Capacities.io](https://capaci
 - **Search**: Search across your Capacities workspace
 - **Spaces**: List and view information about your spaces
 - **Web Links**: Save web links to your Capacities workspace
+- **MCP**: Run a local stdio MCP server
 - **Configuration**: Easy setup and configuration management
 
 ## Installation
@@ -88,6 +89,14 @@ Save a web link:
 
 ```bash
 capacities save-weblink --url "https://example.com" --title "Example Site"
+```
+
+### MCP
+
+Run the MCP server over stdio:
+
+```bash
+capacities mcp serve
 ```
 
 ## Development

@@ -35,6 +35,7 @@ func main() {
 			internalcli.SearchCommand(),
 			internalcli.SaveWebLinkCommand(),
 			internalcli.ConfigureCommand(),
+			internalcli.MCPCommand(),
 		},
 	}
 

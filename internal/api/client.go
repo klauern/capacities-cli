@@ -52,6 +52,13 @@ func NewClient(token string) *Client {
 	}
 }
 
+// NewClientWithBaseURL creates a new Capacities API client with a custom API base URL.
+func NewClientWithBaseURL(token string, baseURL string) *Client {
+	client := NewClient(token)
+	client.baseURL = baseURL
+	return client
+}
+
 // doJSON performs an authenticated JSON HTTP request, marshaling the request body and
 // unmarshaling the response into responseBody. It returns an *Error for non-2xx responses.
 func (c *Client) doJSON(ctx context.Context, method string, path string, query url.Values, requestBody any, responseBody any) error {
