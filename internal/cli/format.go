@@ -15,7 +15,7 @@ const (
 	formatJSON  = "json"
 )
 
-// validateFormat returns an error if format is not a recognised output format.
+// validateFormat returns an error if format is not a recognized output format.
 func validateFormat(format string) error {
 	switch format {
 	case formatTable, formatJSON:

@@ -108,6 +108,7 @@ This project uses [Task](https://taskfile.dev/) for common development tasks.
 - `task build` - Build the binary
 - `task fmt` - Format code using gofumpt
 - `task deps` - Download dependencies and install development tools
+- `task spec-drift` - Compare the API client against the live OpenAPI spec
 - `task test` - Run tests
 
 The Taskfile uses a repo-local Go build cache (`.cache/`) to avoid failures in environments that can't write to the default Go cache directory.

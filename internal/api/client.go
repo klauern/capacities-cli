@@ -195,9 +195,8 @@ type spaceInfoResponse struct {
 
 // GetSpaceInfo retrieves detailed information about structures and collections in a space.
 func (c *Client) GetSpaceInfo(ctx context.Context, spaceID string) ([]Structure, error) {
-	//nolint:revive // API expects "spaceId" (camelCase)
 	q := url.Values{}
-	q.Add("spaceId", spaceID)
+	q.Add("spaceid", spaceID)
 
 	var result spaceInfoResponse
 	if err := c.doJSON(ctx, http.MethodGet, "/space-info", q, nil, &result); err != nil {

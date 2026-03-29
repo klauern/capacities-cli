@@ -144,8 +144,8 @@ func TestClient_GetSpaceInfo(t *testing.T) {
 		if r.URL.Path != "/space-info" {
 			t.Errorf("Expected path /space-info, got %s", r.URL.Path)
 		}
-		if r.URL.Query().Get("spaceId") != "space-1" {
-			t.Errorf("Expected spaceId query param 'space-1', got %s", r.URL.Query().Get("spaceId"))
+		if r.URL.Query().Get("spaceid") != "space-1" {
+			t.Errorf("Expected spaceid query param 'space-1', got %s", r.URL.Query().Get("spaceid"))
 		}
 
 		w.WriteHeader(http.StatusOK)

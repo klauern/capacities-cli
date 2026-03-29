@@ -44,6 +44,11 @@ tasks:
     cmds:
       - go test -v -race ./...
 
+  spec-drift:
+    desc: Compare implemented API endpoints against the live OpenAPI spec
+    cmds:
+      - go run ./scripts/spec-drift
+
   lint:
     desc: Run golangci-lint
     deps: [_ensure-go-cache]
