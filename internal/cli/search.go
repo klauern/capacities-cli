@@ -33,7 +33,7 @@ func SearchCommand() *cli.Command {
 				return fmt.Errorf("search term is required")
 			}
 
-			auth, spaceID, err := RequireSpaceID(cmd)
+			auth, err := RequireSpaceID(cmd)
 			if err != nil {
 				return err
 			}
@@ -41,7 +41,7 @@ func SearchCommand() *cli.Command {
 			client := api.NewClient(auth.Token)
 			req := api.LookupRequest{
 				SearchTerm: term,
-				SpaceID:    spaceID,
+				SpaceID:    auth.DefaultSpaceID,
 			}
 
 			results, err := client.Lookup(ctx, req)

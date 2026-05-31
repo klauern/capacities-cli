@@ -27,13 +27,13 @@ func SpaceInfoCommand() *cli.Command {
 				return err
 			}
 
-			auth, spaceID, err := RequireSpaceID(cmd)
+			auth, err := RequireSpaceID(cmd)
 			if err != nil {
 				return err
 			}
 
 			client := api.NewClient(auth.Token)
-			structures, err := client.GetSpaceInfo(ctx, spaceID)
+			structures, err := client.GetSpaceInfo(ctx, auth.DefaultSpaceID)
 			if err != nil {
 				return fmt.Errorf("failed to get space info: %w", err)
 			}

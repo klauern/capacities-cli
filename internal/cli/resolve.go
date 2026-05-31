@@ -13,11 +13,13 @@ const (
 	envDefaultSpaceID = "CAPACITIES_DEFAULT_SPACE_ID"
 )
 
+// ResolvedAuth contains the token and default space ID chosen for a command.
 type ResolvedAuth struct {
 	Token          string
 	DefaultSpaceID string
 }
 
+// ResolveAuth resolves Capacities credentials from flags, environment, or config.
 func ResolveAuth(cmd *cli.Command) (ResolvedAuth, error) {
 	cfg, err := config.Load()
 	if err != nil {
@@ -46,6 +48,7 @@ func ResolveAuth(cmd *cli.Command) (ResolvedAuth, error) {
 	}, nil
 }
 
+// RequireToken resolves auth and returns an error when no API token is available.
 func RequireToken(cmd *cli.Command) (ResolvedAuth, error) {
 	auth, err := ResolveAuth(cmd)
 	if err != nil {
@@ -57,13 +60,14 @@ func RequireToken(cmd *cli.Command) (ResolvedAuth, error) {
 	return auth, nil
 }
 
-func RequireSpaceID(cmd *cli.Command) (ResolvedAuth, string, error) {
+// RequireSpaceID resolves auth and returns an error when no default space ID is available.
+func RequireSpaceID(cmd *cli.Command) (ResolvedAuth, error) {
 	auth, err := RequireToken(cmd)
 	if err != nil {
-		return ResolvedAuth{}, "", err
+		return ResolvedAuth{}, err
 	}
 	if auth.DefaultSpaceID == "" {
-		return ResolvedAuth{}, "", fmt.Errorf("space ID is required (set --space-id, CAPACITIES_DEFAULT_SPACE_ID, or configure default_space_id)")
+		return ResolvedAuth{}, fmt.Errorf("space ID is required (set --space-id, CAPACITIES_DEFAULT_SPACE_ID, or configure default_space_id)")
 	}
-	return auth, auth.DefaultSpaceID, nil
+	return auth, nil
 }

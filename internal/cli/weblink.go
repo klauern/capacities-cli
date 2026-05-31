@@ -49,14 +49,14 @@ func SaveWebLinkCommand() *cli.Command {
 				return fmt.Errorf("URL is required")
 			}
 
-			auth, spaceID, err := RequireSpaceID(cmd)
+			auth, err := RequireSpaceID(cmd)
 			if err != nil {
 				return err
 			}
 
 			client := api.NewClient(auth.Token)
 			req := api.SaveWebLinkRequest{
-				SpaceID:              spaceID,
+				SpaceID:              auth.DefaultSpaceID,
 				URL:                  url,
 				TitleOverwrite:       cmd.String("title"),
 				DescriptionOverwrite: cmd.String("description"),

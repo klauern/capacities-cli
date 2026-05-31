@@ -22,6 +22,7 @@ func resolveDailySaveText(args []string, stdin io.Reader, stdinIsTTY bool, fileP
 		if filePath == "-" {
 			content, err = io.ReadAll(stdin)
 		} else {
+			// #nosec G304 -- --file intentionally reads the user-specified note content path.
 			content, err = os.ReadFile(filePath)
 		}
 		if err != nil {
@@ -57,12 +58,12 @@ func resolveDailySaveText(args []string, stdin io.Reader, stdinIsTTY bool, fileP
 	return "", fmt.Errorf("text to save is required (provide args, --file, or stdin)")
 }
 
-func isTerminalStdin() bool {
+func isTerminalStdin() (bool, error) {
 	stat, err := os.Stdin.Stat()
 	if err != nil {
-		return true
+		return false, err
 	}
-	return (stat.Mode() & os.ModeCharDevice) != 0
+	return (stat.Mode() & os.ModeCharDevice) != 0, nil
 }
 
 // DailyCommand returns a command for interacting with daily notes.
@@ -85,12 +86,17 @@ func DailyCommand() *cli.Command {
 					},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					text, err := resolveDailySaveText(cmd.Args().Slice(), os.Stdin, isTerminalStdin(), cmd.String("file"))
+					stdinIsTTY, err := isTerminalStdin()
+					if err != nil {
+						return fmt.Errorf("failed to inspect stdin: %w", err)
+					}
+
+					text, err := resolveDailySaveText(cmd.Args().Slice(), os.Stdin, stdinIsTTY, cmd.String("file"))
 					if err != nil {
 						return err
 					}
 
-					auth, spaceID, err := RequireSpaceID(cmd)
+					auth, err := RequireSpaceID(cmd)
 					if err != nil {
 						return err
 					}
@@ -100,7 +106,7 @@ func DailyCommand() *cli.Command {
 						NoTimeStamp: cmd.Bool("no-timestamp"),
 					}
 
-					if err := client.SaveToDailyNote(ctx, spaceID, text, opts); err != nil {
+					if err := client.SaveToDailyNote(ctx, auth.DefaultSpaceID, text, opts); err != nil {
 						return fmt.Errorf("failed to save to daily note: %w", err)
 					}
 
