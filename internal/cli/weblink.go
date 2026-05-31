@@ -17,10 +17,6 @@ func SaveWebLinkCommand() *cli.Command {
 		Usage: "Save a weblink to a space",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "space-id",
-				Usage: "ID of the space to save to",
-			},
-			&cli.StringFlag{
 				Name:  "title",
 				Usage: "Overwrite title",
 			},
@@ -53,22 +49,14 @@ func SaveWebLinkCommand() *cli.Command {
 				return fmt.Errorf("URL is required")
 			}
 
-			cfg, err := loadConfig()
+			auth, err := RequireSpaceID(cmd)
 			if err != nil {
 				return err
 			}
 
-			spaceID := cmd.String("space-id")
-			if spaceID == "" {
-				spaceID = cfg.DefaultSpaceID
-			}
-			if spaceID == "" {
-				return fmt.Errorf("space ID is required (either via flag or config)")
-			}
-
-			client := api.NewClient(cfg.Token)
+			client := api.NewClient(auth.Token)
 			req := api.SaveWebLinkRequest{
-				SpaceID:              spaceID,
+				SpaceID:              auth.DefaultSpaceID,
 				URL:                  url,
 				TitleOverwrite:       cmd.String("title"),
 				DescriptionOverwrite: cmd.String("description"),

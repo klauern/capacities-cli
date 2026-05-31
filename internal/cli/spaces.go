@@ -27,12 +27,12 @@ func SpacesCommand() *cli.Command {
 				return err
 			}
 
-			cfg, err := loadConfig()
+			auth, err := RequireToken(cmd)
 			if err != nil {
 				return err
 			}
 
-			client := api.NewClient(cfg.Token)
+			client := api.NewClient(auth.Token)
 			spaces, err := client.GetSpaces(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to get spaces: %w", err)

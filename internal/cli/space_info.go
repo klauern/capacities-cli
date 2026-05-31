@@ -16,10 +16,6 @@ func SpaceInfoCommand() *cli.Command {
 		Usage: "Get info about a space (structures and collections)",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "space-id",
-				Usage: "ID of the space",
-			},
-			&cli.StringFlag{
 				Name:  "format",
 				Usage: "Output format: table or json",
 				Value: formatTable,
@@ -31,21 +27,13 @@ func SpaceInfoCommand() *cli.Command {
 				return err
 			}
 
-			cfg, err := loadConfig()
+			auth, err := RequireSpaceID(cmd)
 			if err != nil {
 				return err
 			}
 
-			spaceID := cmd.String("space-id")
-			if spaceID == "" {
-				spaceID = cfg.DefaultSpaceID
-			}
-			if spaceID == "" {
-				return fmt.Errorf("space ID is required (either via flag or config)")
-			}
-
-			client := api.NewClient(cfg.Token)
-			structures, err := client.GetSpaceInfo(ctx, spaceID)
+			client := api.NewClient(auth.Token)
+			structures, err := client.GetSpaceInfo(ctx, auth.DefaultSpaceID)
 			if err != nil {
 				return fmt.Errorf("failed to get space info: %w", err)
 			}

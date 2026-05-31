@@ -17,10 +17,6 @@ func SearchCommand() *cli.Command {
 		Usage: "Look up content by title",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "space-id",
-				Usage: "ID of the space to search in",
-			},
-			&cli.StringFlag{
 				Name:  "format",
 				Usage: "Output format: table or json",
 				Value: formatTable,
@@ -37,23 +33,15 @@ func SearchCommand() *cli.Command {
 				return fmt.Errorf("search term is required")
 			}
 
-			cfg, err := loadConfig()
+			auth, err := RequireSpaceID(cmd)
 			if err != nil {
 				return err
 			}
 
-			spaceID := cmd.String("space-id")
-			if spaceID == "" {
-				spaceID = cfg.DefaultSpaceID
-			}
-			if spaceID == "" {
-				return fmt.Errorf("space ID is required (either via flag or config)")
-			}
-
-			client := api.NewClient(cfg.Token)
+			client := api.NewClient(auth.Token)
 			req := api.LookupRequest{
 				SearchTerm: term,
-				SpaceID:    spaceID,
+				SpaceID:    auth.DefaultSpaceID,
 			}
 
 			results, err := client.Lookup(ctx, req)

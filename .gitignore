@@ -7,6 +7,9 @@
 # OS specific
 .DS_Store
 
+# Local build/test cache (sandbox-friendly)
+.cache/
+
 # Dolt database files (added by bd init)
 .dolt/
 *.db

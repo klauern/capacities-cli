@@ -51,6 +51,11 @@ token: YOUR_API_TOKEN
 default_space_id: YOUR_SPACE_ID
 ```
 
+You can also provide these at runtime:
+
+- Flags: `--token`, `--space-id`
+- Environment: `CAPACITIES_TOKEN`, `CAPACITIES_DEFAULT_SPACE_ID`
+
 ## Usage
 
 ### Daily Notes
@@ -59,6 +64,8 @@ Save content to your daily note:
 
 ```bash
 capacities daily save "Your note content here"
+echo "Your note content here" | capacities daily save
+capacities daily save --file ./note.md
 ```
 
 ### Search

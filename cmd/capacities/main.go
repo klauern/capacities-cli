@@ -28,6 +28,16 @@ func main() {
 		Name:    "capacities",
 		Usage:   "CLI for Capacities.io",
 		Version: buildVersion(),
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "token",
+				Usage: "Capacities API token (overrides config; also via CAPACITIES_TOKEN)",
+			},
+			&cli.StringFlag{
+				Name:  "space-id",
+				Usage: "Default space ID (overrides config; also via CAPACITIES_DEFAULT_SPACE_ID)",
+			},
+		},
 		Commands: []*cli.Command{
 			internalcli.DailyCommand(),
 			internalcli.SpacesCommand(),
