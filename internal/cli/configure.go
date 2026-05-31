@@ -12,6 +12,18 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// loadConfig loads the CLI configuration and validates that an API token is present.
+func loadConfig() (*config.Config, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+	if cfg.Token == "" {
+		return nil, fmt.Errorf("API token not found in config. Please configure it first")
+	}
+	return cfg, nil
+}
+
 // ConfigureCommand returns a command for configuring the CLI with an API token.
 func ConfigureCommand() *cli.Command {
 	return &cli.Command{

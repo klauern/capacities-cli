@@ -1,4 +1,8 @@
 {
-  "database": "beads.db",
-  "jsonl_export": "beads.jsonl"
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "capacities_cli",
+  "project_id": "bdf3de33-fd3b-4e1c-9ead-84dd80e1ce77",
+  "last_bd_version": "0.29.0"
 }

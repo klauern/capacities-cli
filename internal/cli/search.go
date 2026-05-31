@@ -5,83 +5,51 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/klauern/capacities-cli/internal/api"
 	"github.com/urfave/cli/v3"
 )
 
-// SearchCommand returns a command for searching content in Capacities.
+// SearchCommand returns a command for looking up content by title in Capacities.
 func SearchCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "search",
-		Usage: "Search for content",
+		Usage: "Look up content by title",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "mode",
-				Usage: "Search mode (title or fullText)",
-				Value: "title",
+				Name:  "format",
+				Usage: "Output format: table or json",
+				Value: formatTable,
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			format := cmd.String("format")
+			if err := validateFormat(format); err != nil {
+				return err
+			}
+
 			term := strings.Join(cmd.Args().Slice(), " ")
 			if term == "" {
 				return fmt.Errorf("search term is required")
 			}
 
-			auth, err := RequireToken(cmd)
+			auth, spaceID, err := RequireSpaceID(cmd)
 			if err != nil {
 				return err
 			}
 
-			spaceIDsStr := cmd.String("space-id")
-			var spaceIDs []string
-			if spaceIDsStr != "" {
-				spaceIDs = strings.Split(spaceIDsStr, ",")
-			} else if auth.DefaultSpaceID != "" {
-				spaceIDs = []string{auth.DefaultSpaceID}
-			}
-
-			if len(spaceIDs) == 0 {
-				return fmt.Errorf("at least one space ID is required (set --space-id, CAPACITIES_DEFAULT_SPACE_ID, or configure default_space_id)")
-			}
-			for i := range spaceIDs {
-				spaceIDs[i] = strings.TrimSpace(spaceIDs[i])
-			}
-			var cleaned []string
-			for _, id := range spaceIDs {
-				if id != "" {
-					cleaned = append(cleaned, id)
-				}
-			}
-			if len(cleaned) == 0 {
-				return fmt.Errorf("at least one space ID is required (set --space-id, CAPACITIES_DEFAULT_SPACE_ID, or configure default_space_id)")
-			}
-
 			client := api.NewClient(auth.Token)
-			req := api.SearchRequest{
+			req := api.LookupRequest{
 				SearchTerm: term,
-				SpaceIDs:   cleaned,
-				Mode:       cmd.String("mode"),
+				SpaceID:    spaceID,
 			}
 
-			results, err := client.Search(ctx, req)
+			results, err := client.Lookup(ctx, req)
 			if err != nil {
-				return fmt.Errorf("search failed: %w", err)
+				return fmt.Errorf("lookup failed: %w", err)
 			}
 
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			_, _ = fmt.Fprintln(w, "ID\tTITLE\tSCORE")
-			for _, r := range results {
-				score := 0.0
-				if len(r.Highlights) > 0 {
-					score = r.Highlights[0].Score
-				}
-				_, _ = fmt.Fprintf(w, "%s\t%s\t%.2f\n", r.ID, r.Title, score)
-			}
-			_ = w.Flush()
-
-			return nil
+			return printLookupResults(os.Stdout, results, format)
 		},
 	}
 }

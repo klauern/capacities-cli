@@ -1,12 +1,23 @@
 version: "3"
 
+env:
+  GOCACHE: "{{.TASKFILE_DIR}}/.cache/go-build"
+  GOTMPDIR: "{{.TASKFILE_DIR}}/.cache/go-tmp"
+  GOMODCACHE: "{{.TASKFILE_DIR}}/.cache/go-mod"
+
 tasks:
   default:
     cmds:
       - task: build
 
+  _ensure-go-cache:
+    internal: true
+    cmds:
+      - mkdir -p .cache/go-build .cache/go-tmp .cache/go-mod
+
   build:
     desc: Build the binary
+    deps: [_ensure-go-cache]
     cmds:
       - go build -o bin/capacities ./cmd/capacities
     sources:
@@ -21,6 +32,7 @@ tasks:
 
   deps:
     desc: Download dependencies
+    deps: [_ensure-go-cache]
     cmds:
       - go mod download
       - go mod tidy
@@ -28,16 +40,24 @@ tasks:
 
   test:
     desc: Run tests
+    deps: [_ensure-go-cache]
     cmds:
       - go test -v -race ./...
 
+  spec-drift:
+    desc: Compare implemented API endpoints against the live OpenAPI spec
+    cmds:
+      - go run ./scripts/spec-drift
+
   lint:
     desc: Run golangci-lint
+    deps: [_ensure-go-cache]
     cmds:
       - golangci-lint run
 
   lint-fix:
     desc: Run golangci-lint with auto-fix
+    deps: [_ensure-go-cache]
     cmds:
       - golangci-lint run --fix
 

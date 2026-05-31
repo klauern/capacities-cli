@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -45,19 +47,44 @@ func TestClient_SaveToDailyNote(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create client with mock server URL
-	// We need to modify the client to allow overriding the base URL for testing
-	// For now, we can temporarily change the constant or make it configurable.
-	// A better approach is to add a BaseURL field to the Client struct.
-
-	// Since I cannot change the const in the same package easily without modifying the struct,
-	// I will modify the Client struct in client.go to support BaseURL.
-
 	client := NewClient("test-token")
-	client.baseURL = server.URL // This requires modifying Client struct to have baseURL field
+	client.baseURL = server.URL
 
 	if err := client.SaveToDailyNote(context.Background(), "test-space", "test note", SaveOptions{}); err != nil {
 		t.Fatalf("SaveToDailyNote failed: %v", err)
+	}
+}
+
+func TestClient_TypedErrorIncludesStatusAndBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte("unauthorized"))
+	}))
+	defer server.Close()
+
+	client := NewClient("test-token")
+	client.baseURL = server.URL
+
+	_, err := client.GetSpaces(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var apiErr *Error
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *Error, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected status %d, got %d", http.StatusUnauthorized, apiErr.StatusCode)
+	}
+	if string(apiErr.Body) != "unauthorized" {
+		t.Fatalf("expected body %q, got %q", "unauthorized", string(apiErr.Body))
+	}
+	if apiErr.Method != http.MethodGet {
+		t.Fatalf("expected method %q, got %q", http.MethodGet, apiErr.Method)
+	}
+	if !strings.Contains(apiErr.URL, "/spaces") {
+		t.Fatalf("expected URL to contain %q, got %q", "/spaces", apiErr.URL)
 	}
 }
 
@@ -117,8 +144,8 @@ func TestClient_GetSpaceInfo(t *testing.T) {
 		if r.URL.Path != "/space-info" {
 			t.Errorf("Expected path /space-info, got %s", r.URL.Path)
 		}
-		if r.URL.Query().Get("spaceId") != "space-1" {
-			t.Errorf("Expected spaceId query param 'space-1', got %s", r.URL.Query().Get("spaceId"))
+		if r.URL.Query().Get("spaceid") != "space-1" {
+			t.Errorf("Expected spaceid query param 'space-1', got %s", r.URL.Query().Get("spaceid"))
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -180,25 +207,25 @@ func TestClient_GetSpaceInfo(t *testing.T) {
 	}
 }
 
-func TestClient_Search(t *testing.T) {
+func TestClient_Lookup(t *testing.T) {
 	// Mock server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("Expected method POST, got %s", r.Method)
 		}
-		if r.URL.Path != "/search" {
-			t.Errorf("Expected path /search, got %s", r.URL.Path)
+		if r.URL.Path != "/lookup" {
+			t.Errorf("Expected path /lookup, got %s", r.URL.Path)
 		}
 
-		var reqBody SearchRequest
+		var reqBody LookupRequest
 		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 			t.Errorf("Failed to decode request body: %v", err)
 		}
 		if reqBody.SearchTerm != "AI" {
 			t.Errorf("Expected SearchTerm 'AI', got %s", reqBody.SearchTerm)
 		}
-		if len(reqBody.SpaceIDs) != 1 || reqBody.SpaceIDs[0] != "space-1" {
-			t.Errorf("Expected SpaceIDs ['space-1'], got %v", reqBody.SpaceIDs)
+		if reqBody.SpaceID != "space-1" {
+			t.Errorf("Expected SpaceID 'space-1', got %s", reqBody.SpaceID)
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -206,18 +233,8 @@ func TestClient_Search(t *testing.T) {
 			"results": [
 				{
 					"id": "res-1",
-					"spaceId": "space-1",
 					"structureId": "struct-1",
-					"title": "AI Research",
-					"highlights": [
-						{
-							"context": {
-								"field": "title"
-							},
-							"snippets": ["AI"],
-							"score": 1.0
-						}
-					]
+					"title": "AI Research"
 				}
 			]
 		}`))
@@ -227,12 +244,12 @@ func TestClient_Search(t *testing.T) {
 	client := NewClient("test-token")
 	client.baseURL = server.URL
 
-	results, err := client.Search(context.Background(), SearchRequest{
+	results, err := client.Lookup(context.Background(), LookupRequest{
 		SearchTerm: "AI",
-		SpaceIDs:   []string{"space-1"},
+		SpaceID:    "space-1",
 	})
 	if err != nil {
-		t.Fatalf("Search failed: %v", err)
+		t.Fatalf("Lookup failed: %v", err)
 	}
 
 	if len(results) != 1 {
